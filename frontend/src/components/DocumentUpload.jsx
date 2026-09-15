@@ -1,44 +1,85 @@
-import { useState } from "react";
-
+import { useRef, useState } from "react";
 import axios from "axios";
-
-
-const API_URL = "http://localhost:8000";
-
 
 function DocumentUpload() {
 
-  const [file, setFile] =
-    useState(null);
+  const fileInputRef = useRef(null);
 
-  const [loading, setLoading] =
-    useState(false);
+  const [file, setFile] = useState(null);
 
-  const [message, setMessage] =
-    useState("");
+  const [loading, setLoading] = useState(false);
 
+  const [message, setMessage] = useState("");
+
+  const [success, setSuccess] = useState(false);
+
+
+  /* ================================
+     FILE SELECT
+  ================================= */
+
+  const handleFileChange = (event) => {
+
+    const selectedFile =
+      event.target.files?.[0];
+
+    setMessage("");
+    setSuccess(false);
+
+    if (!selectedFile) {
+      setFile(null);
+      return;
+    }
+
+    if (
+      !selectedFile.name
+        .toLowerCase()
+        .endsWith(".pdf")
+    ) {
+
+      setFile(null);
+
+      setMessage(
+        "Please select a PDF file."
+      );
+
+      return;
+    }
+
+    setFile(selectedFile);
+  };
+
+
+  /* ================================
+     UPLOAD
+  ================================= */
 
   const uploadFile = async () => {
 
     if (!file) {
 
-      alert("Please select a PDF.");
+      setMessage(
+        "Please select a PDF first."
+      );
+
+      setSuccess(false);
 
       return;
-
     }
-
 
     setLoading(true);
 
-    setMessage("Uploading and processing...");
+    setMessage(
+      "Uploading and indexing your PDF..."
+    );
+
+    setSuccess(false);
 
 
     try {
 
       const formData =
         new FormData();
-
 
       formData.append(
         "file",
@@ -48,78 +89,163 @@ function DocumentUpload() {
 
       const response =
         await axios.post(
-          `${API_URL}/api/documents/upload`,
-          formData,
-          {
-            headers: {
-              "Content-Type":
-                "multipart/form-data"
-            }
-          }
+          "/api/documents/upload",
+          formData
         );
 
 
       const data =
-        response.data.data;
+        response.data?.data;
 
 
-      setMessage(
-        `Uploaded ${data.filename} — ${data.chunks} chunks created.`
-      );
+      if (data) {
+
+        setMessage(
+          `${data.filename} indexed successfully. ${data.chunks} chunks created.`
+        );
+
+      } else {
+
+        setMessage(
+          "Document uploaded successfully."
+        );
+
+      }
+
+
+      setSuccess(true);
+
+      setFile(null);
+
+
+      if (fileInputRef.current) {
+
+        fileInputRef.current.value = "";
+
+      }
+
 
     } catch (error) {
 
-      console.error(error);
+      console.error(
+        "Upload error:",
+        error
+      );
+
+
+      const detail =
+        error.response?.data?.detail;
+
 
       setMessage(
-        error.response?.data?.detail ||
-        "Upload failed."
+        detail ||
+        "Failed to upload document. Make sure the backend is running."
       );
+
+
+      setSuccess(false);
+
 
     } finally {
 
       setLoading(false);
 
     }
-
   };
 
 
   return (
 
-    <div>
-
-      <input
-        type="file"
-        accept=".pdf"
-        onChange={
-          event =>
-            setFile(
-              event.target.files[0]
-            )
-        }
-      />
+    <div className="upload-container">
 
 
-      <button
-        className="upload-button"
-        onClick={uploadFile}
-        disabled={loading}
+      {/* UPLOAD AREA */}
+
+      <label
+        htmlFor="pdf-upload"
+        className="upload-box"
       >
 
-        {loading
-          ? "Processing..."
-          : "Upload PDF"
-        }
+        <div className="upload-icon">
+          PDF
+        </div>
 
-      </button>
 
+        <div className="upload-main-text">
+
+          {file
+            ? file.name
+            : "Choose a PDF document"
+          }
+
+        </div>
+
+
+        <div className="upload-sub-text">
+
+          {file
+            ? `${(
+                file.size /
+                1024 /
+                1024
+              ).toFixed(2)} MB`
+            : "Click here to browse"
+          }
+
+        </div>
+
+
+        <input
+          ref={fileInputRef}
+          id="pdf-upload"
+          type="file"
+          accept=".pdf,application/pdf"
+          onChange={handleFileChange}
+          hidden
+        />
+
+      </label>
+
+
+      {/* BUTTON */}
+
+      <div className="upload-action">
+
+        <button
+          type="button"
+          className="upload-button"
+          onClick={uploadFile}
+          disabled={
+            loading ||
+            !file
+          }
+        >
+
+          {loading
+            ? "Processing..."
+            : "Upload & Index"
+          }
+
+        </button>
+
+      </div>
+
+
+      {/* MESSAGE */}
 
       {message && (
 
-        <p className="upload-message">
+        <div
+          className={
+            success
+              ? "status-message success"
+              : "status-message error"
+          }
+        >
+
           {message}
-        </p>
+
+        </div>
 
       )}
 
@@ -127,6 +253,5 @@ function DocumentUpload() {
 
   );
 }
-
 
 export default DocumentUpload;

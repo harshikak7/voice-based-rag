@@ -2,8 +2,9 @@ fastapi
 uvicorn[standard]
 python-multipart
 python-dotenv
-openai
 chromadb
 pypdf
 langchain-text-splitters
-sentence-transformers
+faster-whisper
+requests
+pyttsx3

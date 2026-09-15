@@ -1,28 +1,38 @@
-from pathlib import Path
-
-from openai import OpenAI
-
-from app.config import (
-    OPENAI_API_KEY,
-    TTS_MODEL,
-    TTS_VOICE
-)
+import pyttsx3
 
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+def generate_speech(
+    text: str,
+    output_path: str
+):
+
+    engine = pyttsx3.init()
 
 
-def generate_speech(text: str, output_path: str):
+    # Speech speed
+    engine.setProperty(
+        "rate",
+        170
+    )
 
-    speech_file = Path(output_path)
 
-    with client.audio.speech.with_streaming_response.create(
-        model=TTS_MODEL,
-        voice=TTS_VOICE,
-        input=text,
-        response_format="mp3"
-    ) as response:
+    # Volume
+    engine.setProperty(
+        "volume",
+        1.0
+    )
 
-        response.stream_to_file(speech_file)
 
-    return str(speech_file)
+    engine.save_to_file(
+        text,
+        output_path
+    )
+
+
+    engine.runAndWait()
+
+
+    engine.stop()
+
+
+    return output_path

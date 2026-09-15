@@ -1,51 +1,110 @@
 import { useState } from "react";
-
-import VoiceRecorder from "./components/VoiceRecorder";
-
 import DocumentUpload from "./components/DocumentUpload";
-
+import VoiceRecorder from "./components/VoiceRecorder";
 import "./App.css";
 
-
 function App() {
-
   const [question, setQuestion] = useState("");
-
   const [answer, setAnswer] = useState("");
-
   const [sources, setSources] = useState([]);
-
   const [audioUrl, setAudioUrl] = useState("");
 
-  return (
+  const clearConversation = () => {
+    setQuestion("");
+    setAnswer("");
+    setSources([]);
+    setAudioUrl("");
+  };
 
+  return (
     <div className="app">
 
-      <header className="header">
+      {/* NAVBAR */}
+      <header className="navbar">
+        <div className="navbar-inner">
 
-        <h1>🎙️ Voice RAG</h1>
+          <div className="brand">
+            <div className="brand-mark">V</div>
+            <span>Voice RAG</span>
+          </div>
 
-        <p>
-          Ask questions about your documents using your voice.
-        </p>
+          <div className="nav-status">
+            <span className="status-dot"></span>
+            Local AI
+          </div>
 
+        </div>
       </header>
 
 
+      {/* HERO */}
+      <section className="hero">
+        <div className="hero-content">
+
+          <div className="eyebrow">
+            VOICE-POWERED DOCUMENT INTELLIGENCE
+          </div>
+
+          <h1>
+            Ask your documents.
+            <br />
+            <span>Get intelligent answers.</span>
+          </h1>
+
+          <p>
+            Upload a document, ask a question using your voice,
+            and get an answer based on your documents.
+          </p>
+
+        </div>
+      </section>
+
+
+      {/* MAIN */}
       <main className="container">
 
-        <section className="card">
+        {/* STEP 01 */}
+        <section className="section-card">
 
-          <h2>📄 Upload Knowledge</h2>
+          <div className="section-header">
+
+            <div className="section-number">
+              01
+            </div>
+
+            <div>
+              <h2>Upload document</h2>
+
+              <p>
+                Add a PDF to create your knowledge base.
+              </p>
+            </div>
+
+          </div>
 
           <DocumentUpload />
 
         </section>
 
 
-        <section className="card voice-card">
+        {/* STEP 02 */}
+        <section className="section-card">
 
-          <h2>🎤 Ask a Question</h2>
+          <div className="section-header">
+
+            <div className="section-number">
+              02
+            </div>
+
+            <div>
+              <h2>Ask with your voice</h2>
+
+              <p>
+                Speak naturally and ask questions about your document.
+              </p>
+            </div>
+
+          </div>
 
           <VoiceRecorder
             setQuestion={setQuestion}
@@ -57,73 +116,146 @@ function App() {
         </section>
 
 
+        {/* QUESTION */}
         {question && (
+          <section className="result-card">
 
-          <section className="card">
+            <div className="result-header">
 
-            <h3>You asked:</h3>
+              <div className="result-icon question-icon">
+                Q
+              </div>
 
-            <p>{question}</p>
+              <div>
+                <span className="result-label">
+                  YOUR QUESTION
+                </span>
+
+                <h3>Voice transcription</h3>
+              </div>
+
+            </div>
+
+            <div className="question-text">
+              {question}
+            </div>
 
           </section>
-
         )}
 
 
+        {/* ANSWER */}
         {answer && (
+          <section className="result-card answer-card">
 
-          <section className="card answer">
+            <div className="result-header">
 
-            <h2>🤖 AI Answer</h2>
-
-            <p>{answer}</p>
-
-
-            {sources.length > 0 && (
-
-              <div className="sources">
-
-                <h3>📚 Sources</h3>
-
-                <ul>
-
-                  {sources.map(
-                    (source, index) => (
-
-                      <li key={index}>
-                        {source}
-                      </li>
-
-                    )
-                  )}
-
-                </ul>
-
+              <div className="result-icon answer-icon">
+                AI
               </div>
 
+              <div>
+                <span className="result-label">
+                  AI RESPONSE
+                </span>
+
+                <h3>Answer</h3>
+              </div>
+
+            </div>
+
+            <div className="answer-text">
+              {answer}
+            </div>
+
+
+            {/* SOURCES */}
+            {sources && sources.length > 0 && (
+              <div className="sources">
+
+                <div className="subsection-title">
+                  Sources
+                </div>
+
+                <div className="source-list">
+
+                  {sources.map((source, index) => (
+                    <div
+                      className="source"
+                      key={index}
+                    >
+
+                      <div className="source-file">
+                        PDF
+                      </div>
+
+                      <span>
+                        {typeof source === "string"
+                          ? source
+                          : source?.source ||
+                            source?.filename ||
+                            `Source ${index + 1}`}
+                      </span>
+
+                    </div>
+                  ))}
+
+                </div>
+
+              </div>
             )}
 
 
+            {/* AUDIO */}
             {audioUrl && (
+              <div className="audio-player">
 
-              <audio
-                controls
-                autoPlay
-                src={audioUrl}
-              />
+                <div className="subsection-title">
+                  Voice response
+                </div>
 
+                <audio
+                  controls
+                  src={audioUrl}
+                />
+
+              </div>
             )}
+
+
+            {/* CLEAR */}
+            <div className="result-actions">
+
+              <button
+                className="clear-button"
+                onClick={clearConversation}
+              >
+                Clear conversation
+              </button>
+
+            </div>
 
           </section>
-
         )}
 
       </main>
 
-    </div>
 
+      {/* FOOTER */}
+      <footer className="footer">
+
+        <div className="footer-inner">
+
+          <span>Voice RAG</span>
+
+          <span>Powered by local AI</span>
+
+        </div>
+
+      </footer>
+
+    </div>
   );
 }
-
 
 export default App;

@@ -1,57 +1,138 @@
+import requests
+
 import chromadb
 
-from chromadb.utils.embedding_functions import (
-    SentenceTransformerEmbeddingFunction
-)
-
 from app.config import (
+    OLLAMA_URL,
+    EMBEDDING_MODEL,
     CHROMA_PATH,
-    COLLECTION_NAME
+    COLLECTION_NAME,
+    TOP_K
 )
 
 
-embedding_function = SentenceTransformerEmbeddingFunction(
-    model_name="all-MiniLM-L6-v2"
-)
-
+# =========================================================
+# CHROMADB
+# =========================================================
 
 chroma_client = chromadb.PersistentClient(
     path=CHROMA_PATH
 )
 
 
-collection = chroma_client.get_or_create_collection(
-    name=COLLECTION_NAME,
-    embedding_function=embedding_function
+collection = (
+    chroma_client.get_or_create_collection(
+        name=COLLECTION_NAME
+    )
 )
 
 
-def retrieve_documents(
-    query: str,
-    number_of_results: int = 5
+# =========================================================
+# EMBEDDING
+# =========================================================
+
+def create_embedding(
+    text: str
 ):
 
+    response = requests.post(
+        f"{OLLAMA_URL}/api/embed",
+        json={
+            "model": EMBEDDING_MODEL,
+            "input": text
+        },
+        timeout=120
+    )
+
+
+    response.raise_for_status()
+
+
+    data = response.json()
+
+
+    embeddings = data.get(
+        "embeddings"
+    )
+
+    if not embeddings:
+
+        raise RuntimeError(
+            "Ollama embedding failed."
+        )
+
+    embedding = embeddings[0]
+
+    if len(embedding) != 768:
+
+        raise RuntimeError(
+            f"Expected 768-dimensional embedding "
+            f"from {EMBEDDING_MODEL}, "
+            f"but got {len(embedding)} dimensions."
+        )
+
+    return embedding
+
+
+# =========================================================
+# RETRIEVE DOCUMENTS
+# =========================================================
+
+def retrieve_documents(
+    query: str,
+    number_of_results: int = TOP_K
+):
+
+    # No documents
+    if collection.count() == 0:
+
+        return [], []
+
+
+    # Convert query into embedding
+    query_embedding = create_embedding(
+        query
+    )
+
+
+    # Search ChromaDB
     results = collection.query(
-        query_texts=[query],
+        query_embeddings=[
+            query_embedding
+        ],
         n_results=number_of_results
     )
+
 
     documents = results.get(
         "documents",
         [[]]
     )[0]
 
+
     metadatas = results.get(
         "metadatas",
         [[]]
     )[0]
 
-    return documents, metadatas
+
+    return (
+        documents,
+        metadatas
+    )
 
 
-def build_context(documents, metadatas):
+# =========================================================
+# BUILD CONTEXT
+# =========================================================
+
+def build_context(
+    documents,
+    metadatas
+):
 
     context_parts = []
+
 
     for document, metadata in zip(
         documents,
@@ -63,8 +144,24 @@ def build_context(documents, metadatas):
             "Unknown"
         )
 
-        context_parts.append(
-            f"Source: {source}\n{document}"
+
+        chunk = metadata.get(
+            "chunk",
+            "Unknown"
         )
 
-    return "\n\n".join(context_parts)
+
+        context_parts.append(
+            f"""
+SOURCE: {source}
+
+CHUNK: {chunk}
+
+{document}
+"""
+        )
+
+
+    return "\n\n".join(
+        context_parts
+    )
